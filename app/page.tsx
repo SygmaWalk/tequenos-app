@@ -1,78 +1,105 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useCart } from '@/context/CartContext'
+import { Product } from '@/lib/types'
+import ProductModal from '@/components/ProductModal'
 
-// Definimos la "forma" de tus datos (TypeScript)
-interface Product {
-  id: string
-  name: string
-  price: number
-  description: string | null
-  image_url: string | null
-}
+// NUEVOS COMPONENTES
+import Hero from '@/components/Hero'
+import Features from '@/components/Features'
+import Footer from '@/components/Footer'
 
-export default async function Home() {
-  // 1. Consulta a la base de datos (Backend Logic en el Frontend)
-  // Nota: Next.js hace esto en el servidor, así que es seguro y rápido.
-  const { data: products, error } = await supabase
-    .from('products')
-    .select('*')
+export default function Home() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const { addToCart } = useCart()
 
-  if (error) {
-    console.error('Error cargando productos:', error)
+  // ESTADOS PARA EL MODAL
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const { data, error } = await supabase.from('products').select('*')
+        if (error) console.error(error)
+        else setProducts(data || [])
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProducts()
+  }, [])
+
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product)
+    setIsModalOpen(true)
   }
 
-  // 2. Renderizado (UI)
   return (
-    <main className="min-h-screen p-8 bg-gray-50">
-      <h1 className="text-4xl font-bold text-center mb-8 text-orange-600">
-        Tequeños App - Menú
-      </h1>
+    <main className="min-h-screen bg-brand-cream/20"> {/* Fondo general suave */}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 container mx-auto">
-        {products?.map((product: Product) => (
-          <div
-            key={product.id}
-            className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200 overflow-hidden"
-          >
-            {/* --- ZONA DE IMAGEN --- */}
-            {product.image_url ? (
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="w-full h-48 object-cover"
-              />
-            ) : (
-              /* Placeholder opcional si no hay imagen (un cuadro gris) */
-              <div className="w-full h-48 bg-gray-200 flex items-center justify-center text-gray-400">
-                Sin imagen
+      {/* 1. HERO SECTION (Tu diseño original migrado) */}
+      <Hero />
+
+      {/* 2. FEATURES (Tus 3 iconos) */}
+      <Features />
+
+      {/* 3. SECCIÓN PRODUCTOS */}
+      <div id="menu-section" className="py-16 container mx-auto px-4">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-brand-blue mb-4">Nuestros Productos</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Descubre nuestra selección de tequeños, combos y salsas artesanales.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {products.map((product: Product) => (
+            <div key={product.id} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all border border-gray-100 overflow-hidden group">
+              {/* Imagen con efecto zoom */}
+              <div className="h-56 overflow-hidden relative">
+                {product.image_url ? (
+                  <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400">Sin imagen</div>
+                )}
               </div>
-            )}
 
-            {/* --- ZONA DE TEXTO (Con padding p-6) --- */}
-            <div className="p-6">
-              <h2 className="text-xl font-semibold text-gray-800">{product.name}</h2>
-              <p className="text-gray-600 mt-2 text-sm line-clamp-2">
-                {product.description}
-              </p>
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-2">
+                  <h2 className="text-xl font-bold text-gray-800">{product.name}</h2>
+                  <span className="text-lg font-bold text-green-600 bg-green-50 px-2 py-1 rounded">${product.price}</span>
+                </div>
+                <p className="text-gray-600 text-sm line-clamp-2 mb-4">{product.description}</p>
 
-              <div className="mt-4 flex justify-between items-center">
-                <span className="text-lg font-bold text-green-600">
-                  ${product.price}
-                </span>
-                <button className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 text-sm font-medium transition-colors">
-                  Agregar
+                <button
+                  className="w-full bg-brand-yellow text-gray-900 py-3 rounded-lg font-bold hover:bg-yellow-400 transition-colors shadow-sm"
+                  onClick={() => handleProductClick(product)}
+                >
+                  Agregar al Pedido
                 </button>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+
+        {loading && <p className="text-center text-gray-500 mt-10">Cargando delicias...</p>}
       </div>
 
-      {(!products || products.length === 0) && (
-        <div className="text-center mt-20">
-          <p className="text-xl text-gray-500">No hay productos disponibles por ahora.</p>
-          <p className="text-sm text-gray-400">Vuelve a intentar más tarde.</p>
-        </div>
-      )}
+      {/* 4. FOOTER */}
+      <Footer />
+
+      {/* MODAL */}
+      <ProductModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        product={selectedProduct}
+      />
     </main>
   )
 }
