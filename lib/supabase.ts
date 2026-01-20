@@ -1,7 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Función para crear el cliente en el navegador
+export const createClient = () =>
+    createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
 
-// Creamos una única instancia del cliente para usar en toda la app
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Exportamos una instancia única para usar en Componentes de Cliente (como tu Home o Login)
+export const supabase = createClient()

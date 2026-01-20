@@ -2,27 +2,26 @@
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { useCart } from '@/context/CartContext'
-import { supabase } from '@/lib/supabase' // Importamos Supabase
+import { supabase } from '@/lib/supabase'
 import { User } from '@supabase/supabase-js'
 
 export default function Navbar() {
+    // --- 1. TODOS LOS HOOKS PRIMERO ---
+    const pathname = usePathname()
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const { toggleCart, cartCount } = useCart()
-
-    // ESTADO PARA EL USUARIO
     const [user, setUser] = useState<User | null>(null)
 
-    // EFECTO: Comprobar si hay usuario al cargar y escuchar cambios
+    // Efecto de autenticación (Ahora está antes del return)
     useEffect(() => {
-        // 1. Verificamos sesión actual
         const getUser = async () => {
             const { data: { session } } = await supabase.auth.getSession()
             setUser(session?.user ?? null)
         }
         getUser()
 
-        // 2. Escuchamos si el usuario se loguea o desloguea en tiempo real
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setUser(session?.user ?? null)
         })
@@ -30,19 +29,26 @@ export default function Navbar() {
         return () => subscription.unsubscribe()
     }, [])
 
-    // Función para cerrar sesión
+    // Funciones auxiliares
     const handleLogout = async () => {
         await supabase.auth.signOut()
         setUser(null)
-        window.location.href = "/" // Recargar al home
+        window.location.href = "/"
     }
 
+    // --- 2. AHORA SÍ, LA CONDICIÓN DE SALIDA ---
+    // Si estamos en admin, retornamos null (no mostramos nada)
+    if (pathname?.startsWith('/admin')) {
+        return null
+    }
+
+    // --- 3. RENDERIZADO DEL NAVBAR ---
     return (
         <nav className="bg-brand-blue shadow-md sticky top-0 z-40">
             <div className="container mx-auto px-4">
-                <div className="flex justify-between items-center h-20"> {/* Aumenté un poco la altura */}
+                <div className="flex justify-between items-center h-20">
 
-                    {/* --- BLOQUE IZQUIERDO: HAMBURGUESA MÓVIL --- */}
+                    {/* --- HAMBURGUESA MÓVIL --- */}
                     <div className="md:hidden flex items-center">
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -60,9 +66,8 @@ export default function Navbar() {
                         </button>
                     </div>
 
-                    {/* --- BLOQUE CENTRAL: LOGO --- */}
+                    {/* --- LOGO --- */}
                     <Link href="/" className="flex items-center gap-2 group">
-                        {/* Aquí asumimos que tu imagen está en la carpeta public como 'logo.png' */}
                         <div className="bg-white p-1 rounded-full">
                             <img
                                 src="/logo.png"
@@ -75,7 +80,7 @@ export default function Navbar() {
                         </span>
                     </Link>
 
-                    {/* --- BLOQUE DERECHO (Escritorio): MENÚ --- */}
+                    {/* --- MENÚ ESCRITORIO --- */}
                     <div className="hidden md:flex space-x-8">
                         <Link href="/" className="text-white hover:text-brand-yellow font-medium transition-colors">
                             Inicio
@@ -83,8 +88,6 @@ export default function Navbar() {
                         <Link href="/menu" className="text-white hover:text-brand-yellow font-medium transition-colors">
                             Menú
                         </Link>
-
-                        {/* Solo mostramos "Mis Puntos" si está logueado */}
                         {user && (
                             <Link href="/fidelidad" className="text-white hover:text-brand-yellow font-medium transition-colors">
                                 Mis Puntos
@@ -92,9 +95,8 @@ export default function Navbar() {
                         )}
                     </div>
 
-                    {/* --- BLOQUE EXTREMO DERECHO: CARRITO Y LOGIN --- */}
+                    {/* --- DERECHA: CARRITO Y LOGIN --- */}
                     <div className="flex items-center space-x-4">
-                        {/* Carrito */}
                         <button onClick={toggleCart} className="relative p-2 text-white hover:text-brand-yellow transition-colors">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -106,7 +108,6 @@ export default function Navbar() {
                             )}
                         </button>
 
-                        {/* LÓGICA DE USUARIO: ¿Está logueado? */}
                         {user ? (
                             <div className="hidden md:flex items-center gap-3">
                                 <span className="text-sm text-brand-yellow font-medium">
@@ -127,18 +128,15 @@ export default function Navbar() {
                     </div>
                 </div>
 
-                {/* --- MENÚ MÓVIL DESPLEGABLE --- */}
+                {/* --- MENÚ MÓVIL --- */}
                 {isMenuOpen && (
                     <div className="md:hidden py-4 border-t border-brand-blue/30 bg-brand-blue absolute top-20 left-0 w-full shadow-xl flex flex-col px-4 space-y-2 z-50">
                         <Link href="/" className="block px-4 py-2 text-white hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>Inicio</Link>
                         <Link href="/menu" className="block px-4 py-2 text-white hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>Menú Completo</Link>
-
                         {user && (
                             <Link href="/fidelidad" className="block px-4 py-2 text-white hover:bg-white/10 rounded-md" onClick={() => setIsMenuOpen(false)}>Mis Puntos</Link>
                         )}
-
                         <hr className="border-white/20 my-2" />
-
                         {user ? (
                             <button
                                 onClick={() => { handleLogout(); setIsMenuOpen(false); }}

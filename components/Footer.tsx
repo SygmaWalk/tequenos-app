@@ -17,14 +17,12 @@ export default function Footer() {
                         <h5 className="text-xl font-bold text-brand-yellow mb-4">Contacto</h5>
                         <ul className="space-y-3 text-blue-100">
                             <li className="flex items-center gap-2">
-                                <span>📍</span> Miami, FL
+                                <span>📍</span> 25 de Mayo, Provincia de Buenos Aires.
                             </li>
                             <li className="flex items-center gap-2">
-                                <span>📱</span> +1 (555) 123-4567
+                                <span>📱</span> +54 9 11 37736159
                             </li>
-                            <li className="flex items-center gap-2">
-                                <span>✉️</span> info@tequenosgavidia.com
-                            </li>
+
                         </ul>
                     </div>
 
